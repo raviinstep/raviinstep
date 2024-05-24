@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const UserService = require('../resolver/userService'); 
+const UserService = require('../resolver/userService');
 require('dotenv').config();
 
 
@@ -9,8 +9,8 @@ const resolvers = {
     _: () => true,
   },
   Mutation: {
-    register: async (_, { userName, email, password, roleId }) => {
-      const dbType = process.env.DATABASE_TYPE; 
+    register: async (_, { userName, email, password, role }) => {
+      const dbType = process.env.DATABASE_TYPE;
       const userService = new UserService(dbType);
 
       try {
@@ -18,12 +18,12 @@ const resolvers = {
         if (existingUser) {
           throw new Error('User with this email already exists');
         }
-
+      
         const user = await userService.createUser({
           userName,
           email,
           password,
-          roleId,
+          role,
         });
 
         const token = jwt.sign(
@@ -31,21 +31,19 @@ const resolvers = {
           process.env.JWT_SECRET,
           { expiresIn: process.env.JWT_ACCESS_EXPIRATION_TIME }
         );
-
         return {
           id: user.id,
           userName: user.userName,
           email: user.email,
-          roleId: user.roleId,
           token,
         };
       } catch (error) {
-        console.log(error,'error')
+        console.log(error, 'error')
         throw new Error('Error creating user: ' + error.message);
       }
     },
     login: async (_, { email, password }) => {
-      const dbType = process.env.DATABASE_TYPE; 
+      const dbType = process.env.DATABASE_TYPE;
       const userService = new UserService(dbType);
 
       try {
@@ -76,6 +74,24 @@ const resolvers = {
         throw new Error('Error logging in: ' + error.message);
       }
     },
+
+    addRole: async (_, { key, title }) => {
+      const dbType = process.env.DATABASE_TYPE;
+      const userService = new UserService(dbType);
+
+      try {
+        const roles = await userService.createRoles({ key, title });
+
+        return {
+          key: roles.key,
+          title: roles.title,
+
+        };
+      } catch (error) {
+        throw new Error('Error logging in: ' + error.message);
+      }
+    },
+
   },
 };
 
